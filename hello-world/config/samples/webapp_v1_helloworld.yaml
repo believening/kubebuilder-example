@@ -1,0 +1,7 @@
+apiVersion: webapp.examples.kubebuilder.io/v1
+kind: HelloWorld
+metadata:
+  name: helloworld-sample
+spec:
+  # Add fields here
+  foo: hello-world-test-log

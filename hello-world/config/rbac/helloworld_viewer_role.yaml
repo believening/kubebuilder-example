@@ -1,0 +1,20 @@
+# permissions for end users to view helloworldren.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: helloworld-viewer-role
+rules:
+- apiGroups:
+  - webapp.examples.kubebuilder.io
+  resources:
+  - helloworldren
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - webapp.examples.kubebuilder.io
+  resources:
+  - helloworldren/status
+  verbs:
+  - get
