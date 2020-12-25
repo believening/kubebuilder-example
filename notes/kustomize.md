@@ -1,0 +1,1 @@
+# kustomize 使用

@@ -1,0 +1,3 @@
+domain: examples.kubebuilder.io
+repo: github.com/believening/kubebuilder-example/cronjob
+version: "2"
