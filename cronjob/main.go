@@ -25,6 +25,9 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	cronv1 "github.com/believening/kubebuilder-example/cronjob/api/v1"
+	"github.com/believening/kubebuilder-example/cronjob/controllers"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -33,14 +36,10 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
-// var (
-// 	namespace  = "kubebuilder-example"
-// 	namespaces = []string{namespace}
-// )
-
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
+	_ = cronv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -56,16 +55,23 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		// Namespace:          namespace,
-		// NewCache:           cache.MultiNamespacedCacheBuilder(namespaces),
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "87a37ab4.examples.kubebuilder.io",
+		LeaderElectionID:   "87a37ab4.kubebuilder.io",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.CronJobReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("CronJob"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CronJob")
 		os.Exit(1)
 	}
 
