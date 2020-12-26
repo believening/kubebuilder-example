@@ -26,7 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	webappv1 "github.com/believening/kubebuilder-example/hello-world/api/v1"
+	examplesv1 "github.com/believening/kubebuilder-example/hello-world/api/v1"
 	"github.com/believening/kubebuilder-example/hello-world/controllers"
 	// +kubebuilder:scaffold:imports
 )
@@ -39,7 +39,7 @@ var (
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
-	_ = webappv1.AddToScheme(scheme)
+	_ = examplesv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -59,7 +59,7 @@ func main() {
 		MetricsBindAddress: metricsAddr,
 		Port:               9443,
 		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "69274712.examples.kubebuilder.io",
+		LeaderElectionID:   "69274712.kubebuilder.io",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

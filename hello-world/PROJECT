@@ -1,7 +1,7 @@
-domain: examples.kubebuilder.io
+domain: kubebuilder.io
 repo: github.com/believening/kubebuilder-example/hello-world
 resources:
-- group: webapp
+- group: examples
   kind: HelloWorld
   version: v1
 version: "2"

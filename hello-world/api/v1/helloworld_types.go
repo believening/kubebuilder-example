@@ -28,8 +28,8 @@ type HelloWorldSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of HelloWorld. Edit HelloWorld_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Greet is an example field of HelloWorld. Edit HelloWorld_types.go to remove/update
+	Greet string `json:"greet,omitempty"`
 }
 
 // HelloWorldStatus defines the observed state of HelloWorld

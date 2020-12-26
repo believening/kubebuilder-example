@@ -18,14 +18,14 @@ package controllers
 
 import (
 	"context"
-	"strings"
 
 	"github.com/go-logr/logr"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	webappv1 "github.com/believening/kubebuilder-example/hello-world/api/v1"
+	examplesv1 "github.com/believening/kubebuilder-example/hello-world/api/v1"
 )
 
 // HelloWorldReconciler reconciles a HelloWorld object
@@ -35,30 +35,32 @@ type HelloWorldReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=webapp.examples.kubebuilder.io,resources=helloworldren,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=webapp.examples.kubebuilder.io,resources=helloworldren/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=examples.kubebuilder.io,resources=helloworldren,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=examples.kubebuilder.io,resources=helloworldren/status,verbs=get;update;patch
 
 func (r *HelloWorldReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("helloworld", req.NamespacedName)
+	ctx := context.Background()
+	log := r.Log.WithValues("helloworld", req.NamespacedName)
 
 	// your logic here
-	ctx, obj := context.Background(), new(webappv1.HelloWorld)
-	if err := r.Client.Get(ctx, req.NamespacedName, obj); err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			r.Log.Info("Del HelloWorld")
-		} else {
-			r.Log.Error(err, "Get Failed", "helloworld", req.NamespacedName)
+	obj := new(examplesv1.HelloWorld)
+	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("Deleted HelloWorld")
+			return ctrl.Result{}, nil
 		}
-	} else {
-		r.Log.Info("Get HelloWorld", "Foo", obj.Spec.Foo)
+		log.Error(err, "Get Failed", "helloworld", req.NamespacedName)
+		return ctrl.Result{}, err
 	}
 
+	log.Info("Get HelloWorld", "Greet", obj.Spec.Greet)
+
+	// return ctrl.Result{RequeueAfter: time.Second}, nil
 	return ctrl.Result{}, nil
 }
 
 func (r *HelloWorldReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&webappv1.HelloWorld{}).
+		For(&examplesv1.HelloWorld{}).
 		Complete(r)
 }

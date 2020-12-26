@@ -7,7 +7,7 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - webapp.examples.kubebuilder.io
+  - examples.kubebuilder.io
   resources:
   - helloworldren
   verbs:
@@ -19,7 +19,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - webapp.examples.kubebuilder.io
+  - examples.kubebuilder.io
   resources:
   - helloworldren/status
   verbs:
