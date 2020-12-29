@@ -68,8 +68,7 @@ var (
 	scheduledTimeAnnotation = "examples.kubebuilder.io/scheduled-at"
 )
 
-func (r *CronJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *CronJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("cronjob", req.NamespacedName)
 
 	// your logic here
@@ -83,6 +82,12 @@ func (r *CronJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if err := r.List(ctx, &childJobs, client.InNamespace(req.Namespace), client.MatchingFields{jobOwnerKey: req.Name}); err != nil {
 		log.Error(err, "unable to list child Jobs")
 		return ctrl.Result{}, err
+	}
+
+	log.V(1).Info("job count", "child jobs", len(childJobs.Items))
+
+	if len(childJobs.Items) == 0 {
+		return ctrl.Result{}, nil
 	}
 
 	var activeJobs []*batchv1.Job
@@ -395,7 +400,7 @@ func (r *CronJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		r.Clock = realClock{}
 	}
 
-	if err := mgr.GetFieldIndexer().IndexField(&batchv1.Job{}, jobOwnerKey, func(rawObj runtime.Object) []string {
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &batchv1.Job{}, jobOwnerKey, func(rawObj client.Object) []string {
 		// grab the job object, extract the owner...
 		job := rawObj.(*batchv1.Job)
 		owner := metav1.GetControllerOf(job)
