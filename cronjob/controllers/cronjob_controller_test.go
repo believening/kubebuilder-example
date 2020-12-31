@@ -155,7 +155,7 @@ var _ = Describe("Cronjob controller", func() {
 					names = append(names, job.Name)
 				}
 				return names, nil
-			}, timeout, interval).Should(ConsistOf(JobName), "should list our active job %s in the active jobs list in status", JobName)
+			}, 2*timeout, interval).Should(ConsistOf(JobName), "should list our active job %s in the active jobs list in status", JobName)
 		})
 	})
 

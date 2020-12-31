@@ -71,7 +71,6 @@ var (
 func (r *CronJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("cronjob", req.NamespacedName)
 
-	// your logic here
 	var cronJob cronv1.CronJob
 	if err := r.Get(ctx, req.NamespacedName, &cronJob); err != nil {
 		log.Error(err, "unable to fetch CronJob")
@@ -87,7 +86,7 @@ func (r *CronJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	log.V(1).Info("job count", "child jobs", len(childJobs.Items))
 
 	if len(childJobs.Items) == 0 {
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	var activeJobs []*batchv1.Job
@@ -201,7 +200,6 @@ func (r *CronJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				log.V(0).Info("deleted old failed job", "job", job)
 			}
 		}
-
 	}
 
 	if cronJob.Spec.SuccessfulJobsHistoryLimit != nil {
@@ -239,7 +237,6 @@ func (r *CronJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			earliestTime = cronJob.ObjectMeta.CreationTimestamp.Time
 		}
 		if cronJob.Spec.StartingDeadlineSeconds != nil {
-			// 如果开始执行时间超过了截止时间，不再执行
 			schedulingDeadline := now.Add(-time.Second * time.Duration(*cronJob.Spec.StartingDeadlineSeconds))
 
 			if schedulingDeadline.After(earliestTime) {
@@ -272,6 +269,7 @@ func (r *CronJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 		return lastMissed, sched.Next(now), nil
 	}
+
 	missedRun, nextRun, err := getNextSchedule(&cronJob, r.Now())
 	if err != nil {
 		log.Error(err, "unable to figure out CronJob schedule")
@@ -299,13 +297,6 @@ func (r *CronJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return scheduledResult, nil
 	}
 
-	/*
-		If we actually have to run a job, we'll need to either wait till existing ones finish,
-		replace the existing ones, or just add new ones.  If our information is out of date due
-		to cache delay, we'll get a requeue when we get up-to-date information.
-	*/
-	// figure out how to run this job -- concurrency policy might forbid us from running
-	// multiple at the same time...
 	if cronJob.Spec.ConcurrencyPolicy == cronv1.ForbidConcurrent && len(activeJobs) > 0 {
 		log.V(1).Info("concurrency policy blocks concurrent runs, skipping", "num active", len(activeJobs))
 		return scheduledResult, nil
@@ -322,19 +313,6 @@ func (r *CronJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 
-	/*
-		Once we've figured out what to do with existing jobs, we'll actually create our desired job
-	*/
-
-	/*
-		We need to construct a job based on our CronJob's template.  We'll copy over the spec
-		from the template and copy some basic object meta.
-		Then, we'll set the "scheduled time" annotation so that we can reconstitute our
-		`LastScheduleTime` field each reconcile.
-		Finally, we'll need to set an owner reference.  This allows the Kubernetes garbage collector
-		to clean up jobs when we delete the CronJob, and allows controller-runtime to figure out
-		which cronjob needs to be reconciled when a given job changes (is added, deleted, completes, etc).
-	*/
 	constructJobForCronJob := func(cronJob *cronv1.CronJob, scheduledTime time.Time) (*batchv1.Job, error) {
 		// We want job names for a given nominal start time to have a deterministic name to avoid the same job being created twice
 		name := fmt.Sprintf("%s-%d", cronJob.Name, scheduledTime.Unix())
@@ -361,7 +339,6 @@ func (r *CronJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 		return job, nil
 	}
-	// +kubebuilder:docs-gen:collapse=constructJobForCronJob
 
 	// actually make the job...
 	job, err := constructJobForCronJob(&cronJob, missedRun)
@@ -379,14 +356,6 @@ func (r *CronJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	log.V(1).Info("created Job for CronJob run", "job", job)
 
-	/*
-		### 7: Requeue when we either see a running job or it's time for the next scheduled run
-		Finally, we'll return the result that we prepped above, that says we want to requeue
-		when our next run would need to occur.  This is taken as a maximum deadline -- if something
-		else changes in between, like our job starts or finishes, we get modified, etc, we might
-		reconcile again sooner.
-	*/
-	// we'll requeue once we see the running job, and update our status
 	return scheduledResult, nil
 }
 
